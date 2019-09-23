@@ -23,38 +23,48 @@ describe Oystercard do
     end
   end
 
-  describe '#deduct' do
-    it 'deducts £10 from the oystercard balance' do
-      oystercard.top_up(50)
-      oystercard.deduct(10)
-      expect(oystercard.balance).to eq 40
-    end
-  end
-
   describe '#in_journey?' do
     it { expect(oystercard.in_journey).to eq false }
   end
 
-  describe 'touch_in' do
+  describe '#touch_in' do
     it 'starts journey' do
+      oystercard.top_up(2)
       oystercard.touch_in
       expect(oystercard).to be_in_journey
     end
+
     it 'does not start journey if already on one' do
+      oystercard.top_up(2)
       oystercard.touch_in
       expect { oystercard.touch_in }.to raise_error("Error: already on journey")
     end
+
+    it 'prevents entry if minimum balance is less than minimum balance' do
+      minimum_balance = Oystercard::MINIMUM_BALANCE
+      oystercard.top_up(0.5)
+      expect { oystercard.touch_in }.to raise_error("Error: balance below #{minimum_balance} - please top up")
+    end
   end
 
-  describe 'touch_out' do
+  describe '#touch_out' do
     it 'ends journey' do
+      oystercard.top_up(2)
       oystercard.touch_in
       oystercard.touch_out
       expect(oystercard).to_not be_in_journey
     end
+
     it 'does not end a journey if not currently on one' do
       expect { oystercard.touch_out }.to raise_error("Error: not currently in use")
     end
+
+    it 'should reduce the balance by the minimum fare' do
+      oystercard.top_up(5)
+      oystercard.touch_in
+      expect { oystercard.touch_out }.to change { oystercard.balance }.by(Oystercard::MINIMUM_FARE * -1)
+    end
+
   end
 
 end
