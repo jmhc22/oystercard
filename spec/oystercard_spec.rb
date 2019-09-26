@@ -2,9 +2,14 @@ require 'Oystercard'
 
 describe Oystercard do
   subject(:oystercard) { described_class.new }
+  let(:station_a) { double :station_a }
+
+  before(:each) do
+    oystercard.top_up(10)
+  end
 
   describe '#balance' do
-    it { expect(oystercard.balance).to eq 0 }
+    it { expect(oystercard.balance).to eq 10 }
   end
 
   describe '#top_up' do
@@ -17,6 +22,7 @@ describe Oystercard do
     end
 
     it 'sets a maximum limit of 90' do
+      oystercard = Oystercard.new
       maximum_balance = Oystercard::MAXIMUM_LIMIT
       oystercard.top_up(maximum_balance)
       expect{ oystercard.top_up(1) }.to raise_error("Error: £#{maximum_balance} exceeded")
@@ -24,33 +30,36 @@ describe Oystercard do
   end
 
   describe '#in_journey?' do
-    it { expect(oystercard.in_journey).to eq false }
+    it { expect(oystercard.in_journey?).to eq false }
   end
 
   describe '#touch_in' do
     it 'starts journey' do
-      oystercard.top_up(2)
-      oystercard.touch_in
+      oystercard.touch_in(station_a)
       expect(oystercard).to be_in_journey
     end
 
     it 'does not start journey if already on one' do
-      oystercard.top_up(2)
-      oystercard.touch_in
-      expect { oystercard.touch_in }.to raise_error("Error: already on journey")
+      oystercard.touch_in(station_a)
+      expect { oystercard.touch_in(station_a) }.to raise_error("Error: already on journey")
     end
 
     it 'prevents entry if minimum balance is less than minimum balance' do
+      oystercard = Oystercard.new
       minimum_balance = Oystercard::MINIMUM_BALANCE
       oystercard.top_up(0.5)
-      expect { oystercard.touch_in }.to raise_error("Error: balance below #{minimum_balance} - please top up")
+      expect { oystercard.touch_in(station_a) }.to raise_error("Error: balance below #{minimum_balance} - please top up")
+    end
+
+    it 'oystercard will store the touch in station as a variable' do
+      oystercard.touch_in(station_a)
+      expect(oystercard.entry_station).to eq station_a
     end
   end
 
   describe '#touch_out' do
     it 'ends journey' do
-      oystercard.top_up(2)
-      oystercard.touch_in
+      oystercard.touch_in(station_a)
       oystercard.touch_out
       expect(oystercard).to_not be_in_journey
     end
@@ -60,11 +69,8 @@ describe Oystercard do
     end
 
     it 'should reduce the balance by the minimum fare' do
-      oystercard.top_up(5)
-      oystercard.touch_in
+      oystercard.touch_in(station_a)
       expect { oystercard.touch_out }.to change { oystercard.balance }.by(Oystercard::MINIMUM_FARE * -1)
     end
-
   end
-
 end
