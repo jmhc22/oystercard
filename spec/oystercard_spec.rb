@@ -1,10 +1,22 @@
 require 'Oystercard'
 
 describe Oystercard do
-  subject(:oystercard) { described_class.new }
   let(:station_a) { double :station_a }
   let(:station_b) { double :station_b }
+
   let(:complete_journey) { { entry: station_a, exit: station_b } }
+  let(:journey) { double :journey, start_journey: nil, end_journey: nil, route: complete_journey, fare: 1 }
+  let(:journey_class) { double :journey_class, new: journey }
+
+  let(:incomplete_journey1) { { entry: nil, exit: station_b } }
+  let(:inc_journey1) { double :inc_journey, start_journey: nil, end_journey: nil, route: incomplete_journey1, fare: 6 }
+  let(:inc_journey_class1) { double :inc_journey_class, new: inc_journey1 }
+
+  let(:incomplete_journey2) { { entry: nil, exit: station_b } }
+  let(:inc_journey2) { double :inc_journey, start_journey: nil, end_journey: nil, route: incomplete_journey2, fare: 6 }
+  let(:inc_journey_class2) { double :inc_journey_class, new: inc_journey2 }
+
+  subject(:oystercard) { described_class.new(journey_class: journey_class) }
 
   before(:each) do
     oystercard.top_up(10)
@@ -19,7 +31,6 @@ describe Oystercard do
       old_balance = oystercard.balance
       top_up_balance = 50
       oystercard.top_up(top_up_balance)
-
       expect(oystercard.balance).to eq top_up_balance + old_balance
     end
 
@@ -31,14 +42,10 @@ describe Oystercard do
     end
   end
 
-  describe '#in_journey?' do
-    it { expect(oystercard.in_journey?).to eq false }
-  end
-
   describe '#touch_in' do
-    it 'starts journey' do
+    it 'starts a journey' do
       oystercard.touch_in(station_a)
-      expect(oystercard).to be_in_journey
+      expect(oystercard.journey).to eq journey
     end
 
     it 'prevents entry if minimum balance is less than minimum balance' do
@@ -48,9 +55,19 @@ describe Oystercard do
       expect { oystercard.touch_in(station_a) }.to raise_error("Error: balance below #{minimum_balance} - please top up")
     end
 
-    it 'oystercard will store the touch in station as a variable' do
+    it 'touching in twice will save an incomplete journey to the journey history' do
+      oystercard = Oystercard.new(journey_class: inc_journey_class1)
+      oystercard.top_up(50)
       oystercard.touch_in(station_a)
-      expect(oystercard.entry_station).to eq station_a
+      oystercard.touch_in(station_a)
+      expect(oystercard.journey_history[-1].route).to eq incomplete_journey1
+    end
+
+    it 'touching in twice will charge £6 penalty fare' do
+      oystercard = Oystercard.new(journey_class: inc_journey_class1)
+      oystercard.top_up(50)
+      oystercard.touch_in(station_a)
+      expect{ oystercard.touch_in(station_a) }.to change{ oystercard.balance }.by(-6)
     end
   end
 
@@ -58,7 +75,7 @@ describe Oystercard do
     it 'ends journey' do
       oystercard.touch_in(station_a)
       oystercard.touch_out(station_b)
-      expect(oystercard).to_not be_in_journey
+      expect(oystercard.journey).to eq nil
     end
 
     it 'should reduce the balance by the minimum fare' do
@@ -66,10 +83,25 @@ describe Oystercard do
       expect { oystercard.touch_out(station_b) }.to change { oystercard.balance }.by(Oystercard::MINIMUM_FARE * -1)
     end
 
+    it 'touching out witout touching in will return an imcomplete journey to the array' do
+      oystercard = Oystercard.new(journey_class: inc_journey_class2)
+      oystercard.top_up(50)
+      oystercard.touch_in(station_a) #using double so just inserting this here
+      oystercard.touch_out(station_b)
+      expect(oystercard.journey_history[-1].route).to eq incomplete_journey2
+    end
+
+    it 'touching out witout touching in will result in £6 penalty fare' do
+      oystercard = Oystercard.new(journey_class: inc_journey_class2)
+      oystercard.top_up(50)
+      oystercard.touch_in(station_a) #using double so just inserting this here
+      expect{ oystercard.touch_out(station_b) }.to change{ oystercard.balance }.by(-6)
+    end
+
     it 'stores a hash of a complete journey on touch out in an array' do
       oystercard.touch_in(station_a)
       oystercard.touch_out(station_b)
-      expect(oystercard.journey_history).to include complete_journey
+      expect(oystercard.journey_history[-1].route).to eq complete_journey
     end
   end
 end
