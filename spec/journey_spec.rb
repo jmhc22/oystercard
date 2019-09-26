@@ -19,22 +19,6 @@ describe Journey do
     expect(journey.route).to eq complete_journey
   end
 
-  it 'knows when a journey is incomplete due to no tap out' do
-    journey.start_journey(station_a)
-    expect(journey.incomplete?).to eq true
-  end
-
-  it 'knows when a journey is incomplete due to no tap in' do
-    journey.end_journey(station_b)
-    expect(journey.incomplete?).to eq true
-  end
-
-  it 'knows when a journey is complete' do
-    journey.start_journey(station_a)
-    journey.end_journey(station_b)
-    expect(journey.incomplete?).to eq false
-  end
-
   it 'returns a fare for a complete journey (minimum)' do
     journey.start_journey(station_a)
     journey.end_journey(station_b)
@@ -49,5 +33,4 @@ describe Journey do
     journey.end_journey(station_b)
     expect(journey.fare).to eq Journey::PENALTY_FARE
   end
-
 end

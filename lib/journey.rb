@@ -17,14 +17,14 @@ class Journey
     calc_fare
   end
 
-  def incomplete?
-    @route[:entry].nil? || @route[:exit].nil?
-  end
-
   private
 
   def calc_fare
     @fare = MINIMUM_FARE unless incomplete?
+  end
+
+  def incomplete?
+    @route[:entry].nil? || @route[:exit].nil?
   end
 
 end
