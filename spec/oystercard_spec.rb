@@ -3,6 +3,8 @@ require 'Oystercard'
 describe Oystercard do
   subject(:oystercard) { described_class.new }
   let(:station_a) { double :station_a }
+  let(:station_b) { double :station_b }
+  let(:complete_journey) { { entry: station_a, exit: station_b } }
 
   before(:each) do
     oystercard.top_up(10)
@@ -39,11 +41,6 @@ describe Oystercard do
       expect(oystercard).to be_in_journey
     end
 
-    it 'does not start journey if already on one' do
-      oystercard.touch_in(station_a)
-      expect { oystercard.touch_in(station_a) }.to raise_error("Error: already on journey")
-    end
-
     it 'prevents entry if minimum balance is less than minimum balance' do
       oystercard = Oystercard.new
       minimum_balance = Oystercard::MINIMUM_BALANCE
@@ -60,17 +57,19 @@ describe Oystercard do
   describe '#touch_out' do
     it 'ends journey' do
       oystercard.touch_in(station_a)
-      oystercard.touch_out
+      oystercard.touch_out(station_b)
       expect(oystercard).to_not be_in_journey
-    end
-
-    it 'does not end a journey if not currently on one' do
-      expect { oystercard.touch_out }.to raise_error("Error: not currently in use")
     end
 
     it 'should reduce the balance by the minimum fare' do
       oystercard.touch_in(station_a)
-      expect { oystercard.touch_out }.to change { oystercard.balance }.by(Oystercard::MINIMUM_FARE * -1)
+      expect { oystercard.touch_out(station_b) }.to change { oystercard.balance }.by(Oystercard::MINIMUM_FARE * -1)
+    end
+
+    it 'stores a hash of a complete journey on touch out in an array' do
+      oystercard.touch_in(station_a)
+      oystercard.touch_out(station_b)
+      expect(oystercard.journey_history).to include complete_journey
     end
   end
 end
