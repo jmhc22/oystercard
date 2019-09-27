@@ -20,11 +20,15 @@ class Journey
   private
 
   def calc_fare
-    @fare = MINIMUM_FARE unless incomplete?
+    @fare = zone_fare unless incomplete?
   end
 
   def incomplete?
     @route[:entry].nil? || @route[:exit].nil?
+  end
+
+  def zone_fare
+    ([@route[:entry].zone, @route[:exit].zone].sort.reverse.inject(:-)) + 1
   end
 
 end

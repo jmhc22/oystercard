@@ -54,7 +54,7 @@ describe Oystercard do
     end
 
     it 'touching in twice will charge £6 penalty fare' do
-      oystercard = Oystercard.new(journey_log_class: inc_journey_log_class1)
+      oystercard = Oystercard.new(journey_log_class: inc_journey_log_class1) # can't use allow here as the journey class object is created on initialize - have to recreate OC
       oystercard.top_up(50)
       oystercard.touch_in(station_a)
       expect{ oystercard.touch_in(station_a) }.to change{ oystercard.balance }.by(-6)
